@@ -63,3 +63,8 @@ wins_gt7_by_team <- wins_gt7_table[wins_gt7_table$Var1 %in% playoff_teams, ]
 
 loss_gt7_table <- as.data.frame(table(games_by_gt7$wteam))
 loss_gt7_by_team <- loss_gt7_table[loss_gt7_table$Var1 %in% playoff_teams, ]
+
+##Create matchup data in the same order as the submission order of the permutations of the
+##teams will be
+
+## Should still be able to combine team data with matchup data to predict 0/1 for any matchup
