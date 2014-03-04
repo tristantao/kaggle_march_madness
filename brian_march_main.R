@@ -161,11 +161,11 @@ result <- vector()
 for(i in c(1:nrow(tourneyRes))) {
   row <- tourneyRes[i, ]
   if(row$wteam < row$lteam) {
-    vector <- paste("A","_",row$wteam,"_", row$lteam, sep ="")
+    vector <- paste(row$season,"_",row$wteam,"_", row$lteam, sep ="")
     team <- c(team, vector)
     result <- c(result, 1)
   } else {
-    oth <- paste("A", "_", row$lteam, "_", row$wteam, sep ="")
+    oth <- paste(row$season, "_", row$lteam, "_", row$wteam, sep ="")
     team <- c(team, oth)
     result <- c(result, 0)
   }
@@ -183,43 +183,44 @@ colnames(team_stats) <- c("TEAMID", "HW", "AW", "NW", "WLT3", "WGT7", "LLT3", "L
                           "RANKLOSS")
   
 ## Creating final grouped datafame to run models on
-model.frame <- data.frame()
+A_model_frame <- cbind(tourneyWin)
+colnames(A_model_frame) <- c("Matchup", "Win")
 # Copy of team_stats and renaming headers to _A for AWAY TEAM
 team_stats_away <- team_stats
 colnames(team_stats_away) <- c("TEAMID", "HW_A", "AW_A", "NW_A", "WLT3_A", "WGT7_A", "LLT3_A", "LGT7_A", "W4WEEK_A", "L4WEEK_A", 
                                "PCT4WEEK_A", "RANKWIN_A", "RANKLOSS_A")
-
-model.frame <- cbind(tourneyWin)
-colnames(model.frame) <- c("Matchup", "Win")
 
 # for 1 : nrows of model.frame match each rows team IDs with rows in team_stats$TEAMID and
 # rbind them all together 
 
 ## Selecting by TeamID
 pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
-teamIDs <- as.data.frame(str_match(model.frame$Matchup, pattern))
+teamIDs <- as.data.frame(str_match(A_model_frame$Matchup, pattern))
 teamIDs <- teamIDs[ , c(2,3)]
 colnames(teamIDs) <- c("HomeID", "AwayID")
 
 
-model.frame <- cbind(tourneyWin, teamIDs)
+A_model_frame <- cbind(tourneyWin, teamIDs)
 
 ## First rbind all of the homeIDs together in model.frame and then all of the awayIDs
 ## together and then cbind everything
 home.frame <- data.frame()
-for(i in model.frame$HomeID) {
+for(i in A_model_frame$HomeID) {
   home.frame <- rbind(home.frame, team_stats[match(i, team_stats$TEAMID), ])
 }
 #Removing teamID column
 home.frame <- home.frame[ , -1]
 
 away.frame <- data.frame()
-for(i in model.frame$AwayID) {
+for(i in A_model_frame$AwayID) {
   away.frame <- rbind(away.frame, team_stats_away[match(i, team_stats_away$TEAMID), ])
 }
 away.frame <- away.frame[ , -1]
 
-model.frame <- cbind(model.frame, home.frame, away.frame)
+A_model_frame <- cbind(A_model_frame, home.frame, away.frame)
+
+
+## TRIAL MODEL
 
 test.glm <- glm(Res ~ AW + WLT3 + WGT7 + LLT3 + LGT7 + W4WEEK + RANKWIN + RANKLOSS +
                   AW_A + WLT3_A + WGT7_A + LLT3_A + LGT7_A + W4WEEK_A + RANKWIN_A + RANKLOSS_A,
