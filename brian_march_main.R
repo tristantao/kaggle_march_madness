@@ -131,20 +131,10 @@ for(i in playoff_teams) {
   rankedloss <- rbind(rankedloss, vector)
 }
 
-individ_team_loss <- season_a[which(season_a$lteam == 577), ]
-loss <- sum(individ_team_loss$wteam %in% playoff_teams)
-
-##Create matchup data in the same order as the submission order of the permutations of the
-##teams will be
-
-## Should still be able to combine team data with matchup data to predict 0/1 for any matchup
-
-## WHat woud trends by team over multiple seasons loook like?
-
-
 ##Creating submission file for season A
 subfile <- submissionFile(64,playoff_teams, "A")
 
+## Creating dataframe for response for season A ONLY
 playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "A")])
 
 season_a_matches <- tourneyRes[which(tourneyRes$season == "A"), ]
@@ -163,7 +153,24 @@ for(i in c(1:nrow(season_a_matches))) {
     result <- c(result, 0)
   }
 }
-tourneyWin <- data.frame("Team" = team, "Res" = result)
+tourneyWin <- data.frame("Matchup" = team, "Res" = result)
+
+## Creating dataframe for response for all seasons
+team <- vector()
+result <- vector()
+for(i in c(1:nrow(tourneyRes))) {
+  row <- tourneyRes[i, ]
+  if(row$wteam < row$lteam) {
+    vector <- paste("A","_",row$wteam,"_", row$lteam, sep ="")
+    team <- c(team, vector)
+    result <- c(result, 1)
+  } else {
+    oth <- paste("A", "_", row$lteam, "_", row$wteam, sep ="")
+    team <- c(team, oth)
+    result <- c(result, 0)
+  }
+}
+matchupRes <- data.frame("Matchup" = team, "Res" = result)
 
 
 ## Combining all of the indidividual statistics into one table by TEAMID
@@ -175,7 +182,62 @@ team_stats <- cbind(homeWins_by_team, awayWins_by_team$Freq, neutWins_by_team$Fr
 colnames(team_stats) <- c("TEAMID", "HW", "AW", "NW", "WLT3", "WGT7", "LLT3", "LGT7", "W4WEEK", "L4WEEK", "PCT4WEEK", "RANKWIN",
                           "RANKLOSS")
   
-  
-  
-  
-  
+## Creating final grouped datafame to run models on
+model.frame <- data.frame()
+# Copy of team_stats and renaming headers to _A for AWAY TEAM
+team_stats_away <- team_stats
+colnames(team_stats_away) <- c("TEAMID", "HW_A", "AW_A", "NW_A", "WLT3_A", "WGT7_A", "LLT3_A", "LGT7_A", "W4WEEK_A", "L4WEEK_A", 
+                               "PCT4WEEK_A", "RANKWIN_A", "RANKLOSS_A")
+
+model.frame <- cbind(tourneyWin)
+colnames(model.frame) <- c("Matchup", "Win")
+
+# for 1 : nrows of model.frame match each rows team IDs with rows in team_stats$TEAMID and
+# rbind them all together 
+
+## Selecting by TeamID
+pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
+teamIDs <- as.data.frame(str_match(model.frame$Matchup, pattern))
+teamIDs <- teamIDs[ , c(2,3)]
+colnames(teamIDs) <- c("HomeID", "AwayID")
+
+
+model.frame <- cbind(tourneyWin, teamIDs)
+
+## First rbind all of the homeIDs together in model.frame and then all of the awayIDs
+## together and then cbind everything
+home.frame <- data.frame()
+for(i in model.frame$HomeID) {
+  home.frame <- rbind(home.frame, team_stats[match(i, team_stats$TEAMID), ])
+}
+#Removing teamID column
+home.frame <- home.frame[ , -1]
+
+away.frame <- data.frame()
+for(i in model.frame$AwayID) {
+  away.frame <- rbind(away.frame, team_stats_away[match(i, team_stats_away$TEAMID), ])
+}
+away.frame <- away.frame[ , -1]
+
+model.frame <- cbind(model.frame, home.frame, away.frame)
+
+test.glm <- glm(Res ~ AW + WLT3 + WGT7 + LLT3 + LGT7 + W4WEEK + RANKWIN + RANKLOSS +
+                  AW_A + WLT3_A + WGT7_A + LLT3_A + LGT7_A + W4WEEK_A + RANKWIN_A + RANKLOSS_A,
+                family = binomial, data = model.frame)
+
+p.hats <- predict.glm(test.glm,newdata = model.frame, type = "response")
+
+winvec <- vector()
+for(i in 1:length(p.hats)) {
+  if(p.hats[i] > .5) {
+    winvec[i] <- 1
+  } else {
+    winvec[i] <- 0
+  }
+}
+
+##Need to know create model.frame format for all seasons. How do we evaluate the glm
+
+## Function needs to change by the playoff matchups that are determined by tourneyRes
+
+
