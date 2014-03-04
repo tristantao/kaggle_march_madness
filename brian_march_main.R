@@ -27,11 +27,13 @@ regSeason$ptdiff <- regSeason$wscore - regSeason$lscore
 head(tourneySeeds)
 
 playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "A")])
+N_playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "N")])
 
 season_a <- regSeason[which(regSeason$season == "A"), ]
 
 win_freq_table <- as.data.frame(table(season_a$wteam))
 wins_by_team <- win_freq_table[win_freq_table$Var1 %in% playoff_teams, ]
+
 
 loss_freq_table <- as.data.frame(table(season_a$lteam))
 loss_by_team <- loss_freq_table[loss_freq_table$Var1 %in% playoff_teams, ]
@@ -57,7 +59,7 @@ datfour <- c(721, 0)
 datfive <- c(701, 0)
 datsix <- c(662, 0)
 
-neutWins_by_team <- missingPteam(neutWins_by_team)
+neutWins_by_team <- missingPteam(neutWins_by_team, playoff_teams)
 
 # Check to see calculations are correct
 wins_by_team$Freq #Should be the same as
@@ -67,23 +69,23 @@ games_by_lt3 <- season_a[which(season_a$ptdiff <= 3), ]
 wins_lt3_table <- as.data.frame(table(games_by_lt3$wteam), stringsAsFactors = FALSE)
 wins_lt3_by_team <- wins_lt3_table[wins_lt3_table$Var1 %in% playoff_teams, ]
 #Adding in missing teams
-wins_lt3_by_team <- missingPteam(wins_lt3_by_team)
+wins_lt3_by_team <- missingPteam(wins_lt3_by_team, playoff_teams)
 
 loss_lt3_table <- as.data.frame(table(games_by_lt3$lteam), stringsAsFactors = FALSE)
 loss_lt3_by_team <- loss_lt3_table[loss_lt3_table$Var1 %in% playoff_teams, ]
 #Adding in missing teams
-loss_lt3_by_team <- missingPteam(loss_lt3_by_team)
+loss_lt3_by_team <- missingPteam(loss_lt3_by_team, playoff_teams)
 
 games_by_gt7 <- season_a[which(season_a$ptdiff >= 7), ]
 wins_gt7_table <- as.data.frame(table(games_by_gt7$wteam), stringsAsFactors = FALSE)
 wins_gt7_by_team <- wins_gt7_table[wins_gt7_table$Var1 %in% playoff_teams, ]
 #Adding in missing teams
-wins_gt7_by_team <- missingPteam(wins_gt7_by_team)
+wins_gt7_by_team <- missingPteam(wins_gt7_by_team, playoff_teams)
 
 loss_gt7_table <- as.data.frame(table(games_by_gt7$wteam), stringsAsFactors = FALSE)
 loss_gt7_by_team <- loss_gt7_table[loss_gt7_table$Var1 %in% playoff_teams, ]
 #Adding in missing teams
-loss_gt7_by_team <- missingPteam(loss_gt7_by_team)
+loss_gt7_by_team <- missingPteam(loss_gt7_by_team, playoff_teams)
 
 #Figure out which row is daynum = 104 (4 weeks before last day daynum = 132)
 match(104, season_a$daynum)
@@ -99,7 +101,7 @@ last_four_win_by_team <- last_four_win_table[last_four_win_table$Var1 %in% playo
 last_four_loss_table <- as.data.frame(table(last_four_season_a$lteam), stringsAsFactors = FALSE)
 last_four_loss_by_team <- last_four_loss_table[last_four_loss_table$Var1 %in% playoff_teams, ]
 #Adding missing values
-last_four_loss_by_team <- missingPteam(last_four_loss_by_team)
+last_four_loss_by_team <- missingPteam(last_four_loss_by_team, playoff_teams)
 
 #Win percentage in last 4 weeks
 last_four_winpct <- last_four_win_by_team$Freq / (last_four_loss_by_team$Freq + last_four_win_by_team$Freq)
@@ -138,3 +140,42 @@ loss <- sum(individ_team_loss$wteam %in% playoff_teams)
 ## Should still be able to combine team data with matchup data to predict 0/1 for any matchup
 
 ## WHat woud trends by team over multiple seasons loook like?
+
+
+##Creating submission file for season A
+subfile <- submissionFile(64,playoff_teams, "A")
+
+playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "A")])
+
+season_a_matches <- tourneyRes[which(tourneyRes$season == "A"), ]
+
+team <- vector()
+result <- vector()
+for(i in c(1:nrow(season_a_matches))) {
+  row <- season_a_matches[i, ]
+  if(row$wteam < row$lteam) {
+    vector <- paste("A","_",row$wteam,"_", row$lteam, sep ="")
+    team <- c(team, vector)
+    result <- c(result, 1)
+  } else {
+    oth <- paste("A", "_", row$lteam, "_", row$wteam, sep ="")
+    team <- c(team, oth)
+    result <- c(result, 0)
+  }
+}
+tourneyWin <- data.frame("Team" = team, "Res" = result)
+
+
+## Combining all of the indidividual statistics into one table by TEAMID
+team_stats <- data.frame()
+team_stats <- cbind(homeWins_by_team, awayWins_by_team$Freq, neutWins_by_team$Freq, wins_lt3_by_team$Freq,
+                    wins_gt7_by_team$Freq, loss_lt3_by_team$Freq, loss_gt7_by_team$Freq, last_four_win_by_team$Freq,
+                    last_four_loss_by_team$Freq, last_four_winpct$WinPct, rankedwins$Wins,
+                    rankedloss$Loss)
+colnames(team_stats) <- c("TEAMID", "HW", "AW", "NW", "WLT3", "WGT7", "LLT3", "LGT7", "W4WEEK", "L4WEEK", "PCT4WEEK", "RANKWIN",
+                          "RANKLOSS")
+  
+  
+  
+  
+  
