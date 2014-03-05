@@ -17,14 +17,112 @@ tourneySlots <- read.csv("data/tourney_slots.csv", header = TRUE, stringsAsFacto
 #  Losses by margin <= 3
 #  Losses by margin >= 7
 #  Num of wins in last 4 weeks or % of wins in last 4 weeks
-#  Num of wins in last 7 games
+#  Num of wins in last 6 games
 #  Wins/loss against teams that are in the tournament? (there are 304 teams in season A and 64 get into tourney)
 
 ##Adds point differential column
 regSeason$ptdiff <- regSeason$wscore - regSeason$lscore
 
 ##Starting with Season A
-head(tourneySeeds)
+
+team_metrics_by_season <- function(seasonletter) {
+  playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == seasonletter)])
+  season <- regSeason[which(regSeason$season == seasonletter), ]
+  ##Each of these dataframes is labled "Var1" and "Freq" for TeamID and Statistic respectively
+  #Wins
+  win_freq_table <- as.data.frame(table(season$wteam))
+  wins_by_team <- win_freq_table[win_freq_table$Var1 %in% playoff_teams, ]
+  #Losses
+  loss_freq_table <- as.data.frame(table(season$lteam))
+  loss_by_team <- loss_freq_table[loss_freq_table$Var1 %in% playoff_teams, ]
+  #Total Win Percentage
+  gamesplayed <- as.vector(wins_by_team$Freq + loss_by_team$Freq)
+  total_winpct <- wins_by_team$Freq / gamesplayed
+  total_winpct_by_team <- as.data.frame(cbind(as.vector(loss_by_team$Var1), total_winpct))
+  colnames(total_winpct_by_team) <- c("Var1", "Freq")
+  #Away Wins
+  away_wins <- season[which(season$wloc == "A"), ]
+  awayWins_table <- as.data.frame(table(away_wins$wteam))
+  awayWins_by_team <- awayWins_table[awayWins_table$Var1 %in% playoff_teams, ]
+  #Home Wins
+  home_wins <- season[which(season$wloc == "H"), ]
+  homeWins_table <- as.data.frame(table(home_wins$wteam))
+  homeWins_by_team <- homeWins_table[homeWins_table$Var1 %in% playoff_teams, ]
+  #Neutral Wins
+  neut_wins <- season[which(season$wloc == "N"), ]
+  neutWins_table <- as.data.frame(table(neut_wins$wteam),stringsAsFactors = FALSE)
+  neutWins_by_team <- neutWins_table[neutWins_table$Var1 %in% playoff_teams, ]
+  neutWins_by_team <- missingPteam(neutWins_by_team, playoff_teams)
+  #Wins by margin of less than 2
+  games_by_lt2 <- season[which(season$ptdiff <= 2), ]
+  wins_lt2_table <- as.data.frame(table(games_by_lt2$wteam), stringsAsFactors = FALSE)
+  wins_lt2_by_team <- wins_lt2_table[wins_lt2_table$Var1 %in% playoff_teams, ]
+  wins_lt2_by_team <- missingPteam(wins_lt2_by_team, playoff_teams) #Missing Teams Check
+  #Losses by margin of less than 2
+  loss_lt2_table <- as.data.frame(table(games_by_lt2$lteam), stringsAsFactors = FALSE)
+  loss_lt2_by_team <- loss_lt2_table[loss_lt2_table$Var1 %in% playoff_teams, ]
+  loss_lt2_by_team <- missingPteam(loss_lt2_by_team, playoff_teams) #Missing Teams Check
+  #Wins by margin of greater than 7
+  games_by_gt7 <- season[which(season$ptdiff >= 7), ]
+  wins_gt7_table <- as.data.frame(table(games_by_gt7$wteam), stringsAsFactors = FALSE)
+  wins_gt7_by_team <- wins_gt7_table[wins_gt7_table$Var1 %in% playoff_teams, ]
+  wins_gt7_by_team <- missingPteam(wins_gt7_by_team, playoff_teams) #MTC
+  #Losses by margin of greater than 7
+  loss_gt7_table <- as.data.frame(table(games_by_gt7$wteam), stringsAsFactors = FALSE)
+  loss_gt7_by_team <- loss_gt7_table[loss_gt7_table$Var1 %in% playoff_teams, ]
+  loss_gt7_by_team <- missingPteam(loss_gt7_by_team, playoff_teams) #MTC
+  #Number of wins in last 4 weeks
+  last_four_season <- season[match(104, season$daynum):nrow(season), ]
+  last_four_win_table <- as.data.frame(table(last_four_season$wteam), stringsAsFactors = FALSE)
+  last_four_win_by_team <- last_four_win_table[last_four_win_table$Var1 %in% playoff_teams, ]
+  last_four_win_by_team <- missingPteam(last_four_win_by_team, playoff_teams) #MTC
+  #Number of losses in last 4 weeks
+  last_four_loss_table <- as.data.frame(table(last_four_season$lteam), stringsAsFactors = FALSE)
+  last_four_loss_by_team <- last_four_loss_table[last_four_loss_table$Var1 %in% playoff_teams, ]
+  last_four_loss_by_team <- missingPteam(last_four_loss_by_team, playoff_teams)
+  #Win percentage in last 4 weeks
+  last_four_winpct <- last_four_win_by_team$Freq / (last_four_loss_by_team$Freq + last_four_win_by_team$Freq)
+  last_four_winpct <- as.data.frame(cbind(as.integer(last_four_win_by_team$Var1), as.numeric(last_four_winpct)))
+  colnames(last_four_winpct) <- c("Var1", "Freq")
+  #Number of wins against teams in the tournament
+  rankedwins <- data.frame()
+  for(i in playoff_teams) {
+    individ_team_wins <- season[which(season$wteam == i), ]
+    wins <- sum(individ_team_wins$lteam %in% playoff_teams)
+    vector <- c(i, wins)
+    rankedwins <- rbind(rankedwins, vector)
+  }
+  colnames(rankedwins) <- c("Var1", "Freq")
+  #Number of losses against teams in the tournament
+  rankedloss <- data.frame()
+  for(i in playoff_teams) {
+    individ_team_loss <- season[which(season$lteam == i), ]
+    loss <- sum(individ_team_loss$wteam %in% playoff_teams)
+    vector <- c(i, loss)
+    rankedloss <- rbind(rankedloss, vector)
+  }
+  colnames(rankedloss) <- c("Var1", "Freq")
+  #Num of wins in last 6 games
+  wins_last_six_games_by_team <- data.frame()
+  for(i in playoff_teams) {
+    games <- season[which(season$wteam == i | season$lteam == i), ]
+    numwins <- sum(tail(games$wteam) == i)
+    put <- c(i, numwins)
+    wins_last_six_games_by_team <- rbind(wins_last_six_games_by_team, put)
+  }
+  colnames(wins_last_six_games_by_team) <- c("Var1", "Freq")
+  #Combining columns together
+  team_metrics <- data.frame()
+  team_metrics <- cbind(wins_by_team, loss_by_team$Freq, total_winpct_by_team$Freq, awayWins_by_team$Freq,
+                      homeWins_by_team$Freq, neutWins_by_team$Freq, wins_lt2_by_team$Freq,
+                      loss_lt2_by_team$Freq, wins_gt7_by_team$Freq, loss_gt7_by_team$Freq,
+                      last_four_win_by_team$Freq, last_four_loss_by_team$Freq, last_four_winpct$Freq,
+                      rankedwins$Freq, rankedloss$Freq, wins_last_six_games_by_team$Freq)
+                      
+  colnames(team_metrics) <- c("TEAMID", "W", "L","TWPCT", "AW", "HW", "NW", "WLT2", "LLT2", "WGT7",
+                              "LGT7", "W4WEEK", "L4WEEK", "PCT4WEEK", "RANKWIN", "RANKLOSS", "WST6")
+  return(team_metrics)
+}
 
 playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "A")])
 N_playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == "N")])
@@ -38,7 +136,10 @@ wins_by_team <- win_freq_table[win_freq_table$Var1 %in% playoff_teams, ]
 loss_freq_table <- as.data.frame(table(season_a$lteam))
 loss_by_team <- loss_freq_table[loss_freq_table$Var1 %in% playoff_teams, ]
 
-gamesPlayed_by_team <- wins_by_team$Freq + loss_by_team$Freq
+gamesplayed <- as.vector(wins_by_team$Freq + loss_by_team$Freq)
+total_winpct <- wins_by_team$Freq / gamesplayed
+total_winpct_by_team <- as.data.frame(cbind(as.vector(loss_by_team$Var1), total_winpct))
+colnames(total_winpct_by_team) <- c("Var1", "Freq")
 
 away_wins <- season_a[which(season_a$wloc == "A"), ]
 awayWins_table <- as.data.frame(table(away_wins$wteam))
@@ -108,6 +209,16 @@ last_four_winpct <- last_four_win_by_team$Freq / (last_four_loss_by_team$Freq + 
 last_four_winpct <- as.data.frame(cbind(as.integer(last_four_win_by_team$Var1), as.numeric(last_four_winpct)))
 colnames(last_four_winpct) <- c("Var1", "WinPct")
 
+#Wins in the last 6 games
+wins_last_six_games_by_team <- data.frame()
+for(i in playoff_teams) {
+  games <- season_a[which(season_a$wteam == i | season_a$lteam == i), ]
+  numwins <- sum(tail(games$wteam) == i)
+  put <- c(i, numwins)
+  wins_last_six_games_by_team <- rbind(wins_last_six_games_by_team, put)
+}
+colnames(wins_last_six_games_by_team) <- c("Var1", "Freq")
+
 #Wins against teams that are in the tournament
 rankedwins <- data.frame()
 colnames(rankedwins) <- c("Var1", "Wins")
@@ -117,9 +228,6 @@ for(i in playoff_teams) {
   vector <- c(i, wins)
   rankedwins <- rbind(rankedwins, vector)
 }
-
-individ_team_wins <- season_a[which(season_a$wteam == 511), ]
-wins <- sum(individ_team_wins$lteam %in% playoff_teams)
 
 #Losses against teams that are in the tournament
 rankedloss <- data.frame()
