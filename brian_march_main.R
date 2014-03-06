@@ -261,4 +261,10 @@ subfile <- data.frame("id" = sub_season$Matchup, "pred"= p.hats)
 
 write.csv(subfile, file = "sub1.csv", row.names = FALSE)
 
+team_season <- team_metrics_by_season("A")
+
+## Think about adding tournament seed into the metrics
+
+
+
 

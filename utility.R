@@ -63,7 +63,7 @@ team_metrics_by_season <- function(seasonletter) {
   loss_by_team <- loss_freq_table[loss_freq_table$Var1 %in% playoff_teams, ]
   #Total Win Percentage
   gamesplayed <- as.vector(wins_by_team$Freq + loss_by_team$Freq)
-  total_winpct <- wins_by_team$Freq / gamesplayed
+  total_winpct <- round(wins_by_team$Freq / gamesplayed, digits = 3)
   total_winpct_by_team <- as.data.frame(cbind(as.vector(loss_by_team$Var1), total_winpct))
   colnames(total_winpct_by_team) <- c("Var1", "Freq")
   #Away Wins
@@ -108,7 +108,7 @@ team_metrics_by_season <- function(seasonletter) {
   last_four_loss_by_team <- missingPteam(last_four_loss_by_team, playoff_teams)
   #Win percentage in last 4 weeks
   last_four_winpct <- last_four_win_by_team$Freq / (last_four_loss_by_team$Freq + last_four_win_by_team$Freq)
-  last_four_winpct <- as.data.frame(cbind(as.integer(last_four_win_by_team$Var1), as.numeric(last_four_winpct)))
+  last_four_winpct <- as.data.frame(cbind(as.integer(last_four_win_by_team$Var1), round(as.numeric(last_four_winpct), digits = 3)))
   colnames(last_four_winpct) <- c("Var1", "Freq")
   #Number of wins against teams in the tournament
   rankedwins <- data.frame()
