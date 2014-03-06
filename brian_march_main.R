@@ -241,5 +241,14 @@ for(i in 1:length(p.hats)) {
 }
 
 
+## TRYING SUBMISSION
+# N O P Q R
+
+N_season <- pred_frame_model("N")
+O_season <- pred_frame_model("O")
+P_season <- pred_frame_model("P")
+Q_season <- pred_frame_model("Q")
+R_season <- pred_frame_model("R")
+
 
 

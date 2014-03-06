@@ -8,7 +8,7 @@
 missingPteam <- function(statistic, playoffTeams) {
   vector <- playoffTeams %in% statistic$Var1
   missTeam <- data.frame()
-  if (sum(vector) != 64) {
+  if (sum(vector) != length(playoffTeams)) {
     for(i in c(1:length(vector))) {
       if (vector[i] == F) {
         insert <- c(playoffTeams[i],0)
@@ -78,7 +78,7 @@ team_metrics_by_season <- function(seasonletter) {
   neut_wins <- season[which(season$wloc == "N"), ]
   neutWins_table <- as.data.frame(table(neut_wins$wteam),stringsAsFactors = FALSE)
   neutWins_by_team <- neutWins_table[neutWins_table$Var1 %in% playoff_teams, ]
-  neutWins_by_team <- missingPteam(neutWins_by_team, playoff_teams)
+  neutWins_by_team <- missingPteam(neutWins_by_team, playoff_teams) #Missing Teams Check
   #Wins by margin of less than 2
   games_by_lt2 <- season[which(season$ptdiff <= 2), ]
   wins_lt2_table <- as.data.frame(table(games_by_lt2$wteam), stringsAsFactors = FALSE)
