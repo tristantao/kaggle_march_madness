@@ -229,7 +229,7 @@ A_model_frame <- cbind(A_model_frame, home.frame, away.frame)
 
 test.glm <- glm(Win ~ W + W4WEEK + RANKWIN + W_A + W4WEEK_A + RANKWIN_A, family = binomial, data = a_train)
 
-p.hats <- predict.glm(test.glm,newdata = a_test, type = "response")
+p.hats <- predict.glm(test.glm,newdata = sub_season, type = "response")
 
 winvec <- vector()
 for(i in 1:length(p.hats)) {
@@ -250,5 +250,15 @@ P_season <- pred_frame_model("P")
 Q_season <- pred_frame_model("Q")
 R_season <- pred_frame_model("R")
 
+
+sub_season <- rbind(N_season, O_season, P_season, Q_season, R_season)
+
+test.glm <- glm(Win ~ W + W4WEEK + RANKWIN + W_A + W4WEEK_A + RANKWIN_A, family = binomial, data = a_train)
+
+p.hats <- predict.glm(test.glm, newdata = sub_season, type = "response")
+
+subfile <- data.frame("id" = sub_season$Matchup, "pred"= p.hats)
+
+write.csv(subfile, file = "sub1.csv", row.names = FALSE)
 
 
