@@ -123,24 +123,22 @@ colnames(wins_last_six_games_by_team) <- c("Var1", "Freq")
 
 #Wins against teams that are in the tournament
 rankedwins <- data.frame()
-colnames(rankedwins) <- c("Var1", "Wins")
 for(i in playoff_teams) {
   individ_team_wins <- season_a[which(season_a$wteam == i), ]
   wins <- sum(individ_team_wins$lteam %in% playoff_teams)
   vector <- c(i, wins)
   rankedwins <- rbind(rankedwins, vector)
 }
-
+colnames(rankedwins) <- c("Var1", "Wins")
 #Losses against teams that are in the tournament
 rankedloss <- data.frame()
-colnames(rankedloss) <- c("Var1", "Loss")
 for(i in playoff_teams) {
   individ_team_loss <- season_a[which(season_a$lteam == i), ]
   loss <- sum(individ_team_loss$wteam %in% playoff_teams)
   vector <- c(i, loss)
   rankedloss <- rbind(rankedloss, vector)
 }
-
+colnames(rankedloss) <- c("Var1", "Loss")
 
 ## Combining all of the indidividual statistics into one table by TEAMID
 team_stats <- data.frame()
@@ -200,7 +198,7 @@ colnames(team_stats_away) <- c("TEAMID", "HW_A", "AW_A", "NW_A", "WLT3_A", "WGT7
 
 # for 1 : nrows of model.frame match each rows team IDs with rows in team_stats$TEAMID and
 # rbind them all together 
-
+library('stringr')
 ## Selecting by TeamID
 pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
 teamIDs <- as.data.frame(str_match(A_model_frame$Matchup, pattern))
@@ -229,11 +227,9 @@ A_model_frame <- cbind(A_model_frame, home.frame, away.frame)
 
 ## TRIAL MODEL
 
-test.glm <- glm(Res ~ AW + WLT3 + WGT7 + LLT3 + LGT7 + W4WEEK + RANKWIN + RANKLOSS +
-                  AW_A + WLT3_A + WGT7_A + LLT3_A + LGT7_A + W4WEEK_A + RANKWIN_A + RANKLOSS_A,
-                family = binomial, data = model.frame)
+test.glm <- glm(Win ~ W + W4WEEK + RANKWIN + W_A + W4WEEK_A + RANKWIN_A, family = binomial, data = a_train)
 
-p.hats <- predict.glm(test.glm,newdata = model.frame, type = "response")
+p.hats <- predict.glm(test.glm,newdata = a_test, type = "response")
 
 winvec <- vector()
 for(i in 1:length(p.hats)) {
@@ -244,8 +240,6 @@ for(i in 1:length(p.hats)) {
   }
 }
 
-##Need to know create model.frame format for all seasons. How do we evaluate the glm
 
-## Function needs to change by the playoff matchups that are determined by tourneyRes
 
 

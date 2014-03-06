@@ -26,7 +26,9 @@ missingPteam <- function(statistic, playoffTeams) {
 # numTeams = number of teams in playoff season
 # playoffTeams = vector of team IDs that are in the tournament
 # season = String for which season, ex) "A"
-submissionFile <- function(numTeams, playoffTeams, season) {
+submissionFile <- function(season) {
+  playoffTeams <- sort(tourneySeeds$team[which(tourneySeeds$season == season)])
+  numTeams <- length(playoffTeams)
   matrix <- matrix(nrow =numTeams, ncol = numTeams)
   for(i in c(1:numTeams)) {
     for(j in c(1:numTeams)) {
@@ -42,7 +44,7 @@ submissionFile <- function(numTeams, playoffTeams, season) {
       }
     }
   }
-  form <- data.frame("id" = idcol, "pred" = NA)
+  form <- data.frame("Matchup" = idcol, "Win" = NA)
   return(form)
 }
 
@@ -148,10 +150,11 @@ team_metrics_by_season <- function(seasonletter) {
   return(team_metrics)
 }
 
-##Function creates data frames in model form by season
+##Function creates data frames in model form by season for training the model
 # seasonletter = String ex) "A"
 # teamMetrics = team metrics by season aka the dataframe returned by team_metrics_by_season("A")
-data_frame_model <- function(seasonletter, teamMetrics) {
+data_frame_model <- function(seasonletter) {
+  teamMetrics <- team_metrics_by_season(seasonletter)
   season_matches <- tourneyRes[which(tourneyRes$season == seasonletter), ]
   team <- vector()
   result <- vector()
@@ -193,5 +196,40 @@ data_frame_model <- function(seasonletter, teamMetrics) {
   model_data_frame <- cbind(model_data_frame, home_frame, away_frame)
   
   return(model_data_frame)
-  
 }
+
+##Function creates data frames in model form by season for prediction
+pred_frame_model <- function(season) {
+  model_data_frame <- submissionFile(season)
+  teamMetrics <- team_metrics_by_season(season)
+  teamMetrics_away <- teamMetrics
+  colnames(teamMetrics_away) <- c("TEAMID_A", "W_A", "L_A","TWPCT_A", "AW_A", "HW_A", "NW_A", "WLT2_A",
+                                  "LLT2_A", "WGT7_A", "LGT7_A", "W4WEEK_A", "L4WEEK_A", "PCT4WEEK_A",
+                                  "RANKWIN_A", "RANKLOSS_A", "WST6_A")
+  pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
+  teamIDs <- as.data.frame(str_match(model_data_frame$Matchup, pattern))
+  teamIDs <- teamIDs[ , c(2,3)]
+  colnames(teamIDs) <- c("HomeID", "AwayID")
+  model_data_frame <- cbind(model_data_frame, teamIDs)
+  home_frame <- data.frame()
+  for(i in model_data_frame$HomeID) {
+    home_frame <- rbind(home_frame, teamMetrics[match(i, teamMetrics$TEAMID), ])
+  }
+  #Removing teamID column
+  home_frame <- home_frame[ , -1]
+  
+  away_frame <- data.frame()
+  for(i in model_data_frame$AwayID) {
+    away_frame <- rbind(away_frame, teamMetrics_away[match(i, teamMetrics_away$TEAMID), ])
+  }
+  away_frame <- away_frame[ , -1]
+  
+  model_data_frame <- cbind(model_data_frame, home_frame, away_frame)
+  
+  return(model_data_frame)
+}
+
+
+
+
+
