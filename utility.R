@@ -165,6 +165,7 @@ team_metrics_by_season <- function(seasonletter) {
 # seasonletter = String season Ex) "A"
 team_metrics_by_season_vtwo <- function(seasonletter) {
   playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == seasonletter)])
+  playoff_seeds <- tourneySeeds[which(tourneySeeds$season == seasonletter), ]
   season <- regSeason[which(regSeason$season == seasonletter), ]
   ##Each of these dataframes is labled "Var1" and "Freq" for TeamID and Statistic respectively
   #Wins (NOT A USABLEVAR, must scale)
@@ -260,14 +261,24 @@ team_metrics_by_season_vtwo <- function(seasonletter) {
     wins_last_six_games_by_team <- rbind(wins_last_six_games_by_team, put)
   }
   colnames(wins_last_six_games_by_team) <- c("Var1", "Freq")
+  #Adding Seed
+  seeds <- rep(c(1:16), 4)
+  playoff_seeds$seed  <- seeds
+  seed_col <- vector()
+  for(i in playoff_teams) {
+    val <- match(i, playoff_seeds$team)
+    seed_col <- c(seed_col, playoff_seeds$seed[val])
+  }
+  team_seed <- data.frame("Var1" = playoff_teams, "Freq" =seed_col)
   #Combining columns together
   team_metrics <- data.frame()
   team_metrics <- cbind(total_winpct_by_team, awayWins_by_team$Freq, wins_lt2_by_team$Freq,
                         loss_lt2_by_team$Freq, wins_gt7_by_team$Freq, loss_gt7_by_team$Freq,
-                        last_four_winpct$Freq, rankedpercent$Freq, wins_last_six_games_by_team$Freq)
+                        last_four_winpct$Freq, rankedpercent$Freq, wins_last_six_games_by_team$Freq,
+                        team_seed$Freq)
   
   colnames(team_metrics) <- c("TEAMID", "TWPCT", "AWPCT", "WLT2", "LLT2", "WGT7", "LGT7",
-                              "PCT4WEEK", "RANKPCT", "WST6")
+                              "PCT4WEEK", "RANKPCT", "WST6", "SEED")
   return(team_metrics)
 }
 
@@ -298,7 +309,7 @@ data_frame_model <- function(seasonletter) {
   model_data_frame <- data.frame("Matchup" = team, "Win" = result)
   teamMetrics_away <- teamMetrics
   colnames(teamMetrics_away) <- c("TEAMID", "TWPCT_A", "AWPCT_A", "WLT2_A", "LLT2_A", "WGT7_A",
-                                  "LGT7_A", "PCT4WEEK_A", "RANKPCT_A", "WST6_A")
+                                  "LGT7_A", "PCT4WEEK_A", "RANKPCT_A", "WST6_A", "SEED_A")
   pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
   teamIDs <- as.data.frame(str_match(model_data_frame$Matchup, pattern))
   teamIDs <- teamIDs[ , c(2,3)]
@@ -331,7 +342,7 @@ pred_frame_model <- function(season) {
   teamMetrics <- team_metrics_by_season_vtwo(season)  
   teamMetrics_away <- teamMetrics
   colnames(teamMetrics_away) <- c("TEAMID", "TWPCT_A", "AWPCT_A", "WLT2_A", "LLT2_A", "WGT7_A",
-                                  "LGT7_A", "PCT4WEEK_A", "RANKPCT_A", "WST6_A")
+                                  "LGT7_A", "PCT4WEEK_A", "RANKPCT_A", "WST6_A", "SEED_A")
   pattern <- "[A-Z]_([0-9]{3})_([0-9]{3})"
   teamIDs <- as.data.frame(str_match(model_data_frame$Matchup, pattern))
   teamIDs <- teamIDs[ , c(2,3)]
