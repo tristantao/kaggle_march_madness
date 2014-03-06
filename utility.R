@@ -262,7 +262,9 @@ team_metrics_by_season_vtwo <- function(seasonletter) {
   }
   colnames(wins_last_six_games_by_team) <- c("Var1", "Freq")
   #Adding Seed
-  seeds <- rep(c(1:16), 4)
+  pattern <- "[A-Z]([0-9][0-9])"
+  team_seeds <- as.data.frame(str_match(playoff_seeds$seed, pattern))
+  seeds <- as.numeric(team_seeds$V2)
   playoff_seeds$seed  <- seeds
   seed_col <- vector()
   for(i in playoff_teams) {
@@ -297,11 +299,11 @@ data_frame_model <- function(seasonletter) {
   for(i in c(1:nrow(season_matches))) {
     row <- season_matches[i, ]
     if(row$wteam < row$lteam) {
-      vector <- paste("A","_",row$wteam,"_", row$lteam, sep ="")
+      vector <- paste(seasonletter,"_",row$wteam,"_", row$lteam, sep ="")
       team <- c(team, vector)
       result <- c(result, 1)
     } else {
-      oth <- paste("A", "_", row$lteam, "_", row$wteam, sep ="")
+      oth <- paste(seasonletter, "_", row$lteam, "_", row$wteam, sep ="")
       team <- c(team, oth)
       result <- c(result, 0)
     }

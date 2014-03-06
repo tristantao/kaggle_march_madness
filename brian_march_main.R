@@ -225,23 +225,27 @@ away.frame <- away.frame[ , -1]
 
 A_model_frame <- cbind(A_model_frame, home.frame, away.frame)
 
-## TRIAL MODEL
+## GLM MODEL
 
-test.glm <- glm(Win ~ W + W4WEEK + RANKWIN + W_A + W4WEEK_A + RANKWIN_A, family = binomial, data = a_train)
 
-p.hats <- predict.glm(test.glm,newdata = sub_season, type = "response")
-
-winvec <- vector()
-for(i in 1:length(p.hats)) {
-  if(p.hats[i] > .5) {
-    winvec[i] <- 1
-  } else {
-    winvec[i] <- 0
-  }
+## Creating master train data with all seasons
+train_data <- data.frame()
+for(i in LETTERS[1:18]) {
+  train_data <- rbind(train_data, data_frame_model(i))
 }
 
+## Fitting GLM
+train.glm <- glm(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 +
+                   AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A,
+                 family = binomial, data = train_data)
+library('rpart')
+train.rpart <- rpart(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + SEED +
+                       AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A + SEED_A,
+                     data = train_data, method = "class",
+                     control=rpart.control(minsplit=30, cp=0.001))
 
-## TRYING SUBMISSION
+
+## Creating test data with last 5 seasons
 # N O P Q R
 
 N_season <- pred_frame_model("N")
@@ -250,21 +254,34 @@ P_season <- pred_frame_model("P")
 Q_season <- pred_frame_model("Q")
 R_season <- pred_frame_model("R")
 
+test_data <- rbind(N_season, O_season, P_season, Q_season, R_season)
 
-sub_season <- rbind(N_season, O_season, P_season, Q_season, R_season)
+p.hats <- predict.glm(train.glm, newdata = test_data, type = "response")
 
-test.glm <- glm(Win ~ W + W4WEEK + RANKWIN + W_A + W4WEEK_A + RANKWIN_A, family = binomial, data = a_train)
+p.hats.rpart <- predict(train.rpart, newdata = test_data, type = "prob")
+p.hats.rpart <- p.hats.rpart[ , 1]
 
-p.hats <- predict.glm(test.glm, newdata = sub_season, type = "response")
+wins <- vector()
+for(i in 1:length(p.hats.rpart)) {
+  if(p.hats.rpart[i] > .5) {
+    wins[i] <- 0
+  } else {
+    survival[i] <- 1
+  }
+}
 
-subfile <- data.frame("id" = sub_season$Matchup, "pred"= p.hats)
+for(i in 1:5) {
+  print(i)
+}
+subfile <- data.frame("id" = test_data$Matchup, "pred"= p.hats.rpart[ , 2])
 
-write.csv(subfile, file = "sub1.csv", row.names = FALSE)
+write.csv(subfile, file = "sub4.csv", row.names = FALSE)
 
-team_season <- team_metrics_by_season("A")
-
-## Think about adding tournament seed into the metrics
-
-
-
-
+#Sub2.csv
+train.glm <- glm(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + SEED +
+                   AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A + SEED_A,
+                 family = binomial, data = train_data)
+#Sub3.csv
+train.glm <- glm(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 +
+                   AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A,
+                 family = binomial, data = train_data)
