@@ -57,6 +57,19 @@ submissionFile <- function(season) {
 
 ##Function creates data frame of all playoff teams individual team statistics
 # seasonletter = String season Ex) "A"
+
+###Variables included
+#  TWPCT = Total Winning Percentage
+#  AWPCT = Away Wins Winning Percentage
+#  WLT2 = Wins by margin less than 2
+#  LLT2 = Losses by margin less than 2
+#  WGT7 = Wins by margin greater than 7
+#  LGT7 = Losses by margin greater than 7
+#  PCT4WEEK = Win % in last 4 weeks
+#  RANKPCT = Win % against teams in playoff
+#  WST6 = Number of wins in last 6 games
+#  SEED = Seed in tournament
+#  TWIN = Wins in tournament
 team_metrics_by_season <- function(seasonletter) {
   playoff_teams <- sort(tourneySeeds$team[which(tourneySeeds$season == seasonletter)])
   playoff_seeds <- tourneySeeds[which(tourneySeeds$season == seasonletter), ]
