@@ -1,0 +1,144 @@
+Welcome to our second edition of "Data Analytics for Beginners" where we walk you through step by step how to analyze real data. In this edition we again use a third party data project taken from <a href="http://www.kaggle.com" target="_blank">Kaggle</a>, a company which hosts data science competitions. In the interest of the competition and learning we will not post direct solutions to achieve the score we have attained like we did for the Titanic: Machine Learning from Disaster project. We hope you like it!
+
+<h3>What You Will Learn:</h3>
+Again these tutorials are meant for **ANYONE** interested in learning more about data analytics and is made so that you can follow along even with no prior experience in **R**. Some background in Statistics would be helpful (making the fancy words seem less fancy) but neither is it necessary. Specifically if you follow through each section of this tutorial you will have experience in the following:
+<ul>
+ <li>Implementing a machine learning model using classification trees</li>
+ <li>Creating custom functions in R</li>
+ <li>Simple regular expressions</li>
+ <li>How to go from a question about data to an answer!</li>
+</ul>
+In Part I we will first breakdown the March Machine Learning Mania project and describe the steps to tackling this competition! Its a little bit more challenging than the Titanic data project so we are doing our best to simplify things as much as possible!
+
+<h3>Why You Should Follow Along:</h3>
+MIT Professor Erik Brynjolfsson likens the impact of Big Data to the invention of the microscope. The microscope enabled us to see things too small for the human eye, and what Data Science enables society to do is now see things previously too big.
+
+Hal Varian, Chief Economist at Google, said this about the field of Data Analytics and Data Science:
+<blockquote>If you are looking for a career where your services will be in high demand, you should find something where you provide a scarce, complementary service to something that is getting ubiquitous and cheap. So what’s getting ubiquitous and cheap? Data. And what is complementary to data? Analysis. So my recommendation is to take lots of courses about how to manipulate and analyze data: databases, machine learning, econometrics, statistics, visualization, and so on.</blockquote>
+
+<h3>Who We Are:</h3>
+We are recent UC Berkeley grads who studied Statistics (among other things) and realized two things: (1) how essential an understanding of Statistics and Data Analysis was to almost every industry and (2) how teachable these analytic practices could be!
+
+<h3>Tips for Following Along</h3>
+We recommend **copying and pasting** all code snippets that we have included, with the **exception** of the first one where you need to set your own working directory. While copying and pasting allows you to run the code, you should read through and have an intuitive understanding of what is happening in the code. Our goal isn't to necessarily teach R syntax, but to provide a sense of the process of digging into data and allow you to use other resources to learn R.
+
+<h3>New to R &amp; RStudio?</h3>
+No problem! But first go to our post to onboard you in <a href="http://statsguys.wordpress.com/2014/03/06/installing-r-rstudio-and-setting-your-working-directory/" target="_blank">Installing R, RStudio, and Setting Your Working Directory</a>
+
+<h3>Kaggle Project: March Machine Learning Mania</h3>
+To have access to the data project, you also need to become a Kaggle Competitor, don't worry it's free! Sign up for <a href="http://www.kaggle.com/account/register" target="_blank">Kaggle here</a>.
+
+The essence of this competition is quite simple. Most of us have probably filled out a bracket in March (whether we watched any of the regular season or not) and went on to ESPN to see what Bill Simmons or Barack Obama thinks. Well now you can figure out for yourself whose going to win using data analytics. Do it perfectly this year and Warren Buffett will give you a <a href="https://tournament.fantasysports.yahoo.com/quickenloansbracket/challenge/" target="_blank">billion dollars</a>
+
+<h2>Strategy to Begin</h2>
+These competitions can be quite overwhelming so its good to break down the steps one should take to begin. We will go in depth with each of these:
+<ol>
+ <li>Take a quick look at each of the datasets, just note column titles and rows</li>
+ <li>Understand the file you are submitting to Kaggle or more broadly what are you predicting?</li>
+ <li>Take a step back now and brainstorm!</li>
+</ol>
+
+<h2>Familiarizing Yourself with the Data</h2>
+The first thing we need to do is download all of the datasets and load them into RStudio. You can download them all <a href="http://www.kaggle.com/c/march-machine-learning-mania/data" target="_blank">here</a> and don't forget to save them in a folder titled "Kaggle" in your desktop! Also make sure you've <a href="http://statsguys.wordpress.com/2014/03/06/installing-r-rstudio-and-setting-your-working-directory/" target="_blank">correctly set up your working directory!</a>
+
+<h2>Inputting the Datasets in Rstudio</h2>
+We again utilize the ```read.csv()``` function and set ```stringsAsFactors = FALSE``` which sets the columns of our data to be non-categorical and makes them easier to manipulate. Setting ```header = TRUE``` keeps the first rows as column titles instead of data!
+
+For the code snippet below you may need to scroll left and right to copy and paste all of the code.
+
+```R
+regSeason <- read.csv("data/regular_season_results.csv", header = TRUE, stringsAsFactors = FALSE)
+seasons <- read.csv("data/seasons.csv", header = TRUE, stringsAsFactors = FALSE)
+teams <- read.csv("data/teams.csv", header = TRUE, stringsAsFactors = FALSE)
+tourneyRes <- read.csv("data/tourney_results.csv", header = TRUE, stringsAsFactors = FALSE)
+tourneySeeds <- read.csv("data/tourney_seeds.csv", header = TRUE, stringsAsFactors = FALSE)
+tourneySlots <- read.csv("data/tourney_slots.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+We use ```head()``` and ```tail()``` functions to get an easy look at what these datasets contain. ```head()``` returns the first six rows and ```tail()``` returns the last six rows of the dataset. Specifically we will look at the two important ones, but you should check out all of them.
+
+```R
+head(regSeason)
+tail(regSeason)
+```
+What do each of these columns represent? Read for more detail in the <a href="http://www.kaggle.com/c/march-machine-learning-mania/data" target="_blank">Kaggle Descriptions</a>
+<ul>
+ <li>"season" = season organized alphabetically</li>
+ <li>"daynum" = Day Number of the season</li>
+ <li>"wteam" = Winning Team ID</li>
+ <li>"wscore" = Winning Team Score</li>
+ <li> "lteam" = Losing Team ID</li>
+ <li>"lscore" = Losing Team Score</li>
+ <li>"wloc" = Win Location (Home, Away, Neutral)</li>
+ <li>"numot" = Number of Overtimes (Not counted until season J)</li>
+</ul>
+
+Now lets take a look at the tournament results dataset.
+```R
+head(tourneyRes)
+tail(tourneyRes)
+```
+They are similar column names to the ```regSeason``` dataset.
+
+<h2>Understanding What your Submitting</h2>
+Understanding the submission file allows you to frame the dataset you need to create to build your model. At a high level remember that we need to create two datasets which we will call <strong>Train</strong> and <strong>Test</strong>. Take a look at the "sample_submission.csv" file in the data provided by Kaggle.
+
+In the first stage you must make predictions on every possible first round tournament matchup for seasons N, O, P, Q, and R. Taking season N as an example, there were a total of 65 teams so you have to make predictions for Team 1 vs. Team 2, Team 1 vs. Team 3 .... Team 1 vs. Team 65 and then Team 2 vs. Team 3, Team 2 vs. Team 4, ... Team 2 vs. Team 65 and so on until every combination is listed for each season N-R.
+
+Below is a screenshot of the file:
+<a href="http://statsguys.files.wordpress.com/2014/03/sample_sub.png"><img src="http://statsguys.files.wordpress.com/2014/03/sample_sub.png?w=150" alt="sample_sub" width="150" height="99" class="aligncenter size-thumbnail wp-image-134" /></a>
+
+Notice how the format is SEASONLETTER_TEAMID_TEAMID for the "id" column and in the "pred" column will be numbers ranging from 0 to 1 representing the probability of the TEAMID on the left winning.
+
+<h2>Creating the Submission File</h2>
+The code below is a little complicated, and unnecessarily so for understanding of the project so it would probably be best to copy and paste now and interpret later. What we create is a function ```submissionFile()``` which creates columns of the form SEASONLETTER_TEAMID_TEAMID.
+
+```R
+submissionFile <- function(season) {
+  playoffTeams <- sort(tourneySeeds$team[which(tourneySeeds$season == season)])
+  numTeams <- length(playoffTeams)
+  matrix <- matrix(nrow =numTeams, ncol = numTeams)
+  for(i in c(1:numTeams)) {
+    for(j in c(1:numTeams)) {
+      matrix[i,j] <- paste(season,"_",playoffTeams[i],"_", playoffTeams[j], sep ="")
+    }
+  }
+  keep <- upper.tri(matrix, diag = F)
+  idcol <- vector()
+  for(i in c(1:numTeams)) {
+    for(j in c(1:numTeams)) {
+      if(keep[i,j] == T) {
+        idcol <- c(idcol, matrix[i,j])
+      }
+    }
+  }
+  form <- data.frame("Matchup" = idcol, "Win" = NA)
+  return(form)
+}
+sub_file <- data.frame()
+for(i in LETTERS[14:18]) {
+  sub_file <- rbind(sub_file, submissionFile(i))
+}
+```
+
+<h2>Your First Submission!</h2>
+The code below will create a file in your working directory that you can submit to Kaggle! It's always good to get a quick submission to get the ball rolling. Here we guess 50% for every possible matchup which is the equivalent of saying for each matchup its a coin flip! Obviously we can predict with better accuracy, especially for games such as a 1 Seed vs. a 16 Seed but thats to come later...
+
+```R
+colnames(sub_file) <- c("id", "pred")
+sub_file$pred <- .5
+write.csv(sub_file, file = "sub1.csv", row.names = FALSE)
+```
+
+<h3>Taking a Step Back, and Brainstorming!</h3>
+This is the most creative part of data analytics and arguably the <strong>most important</strong> part. Now that you know what you are predicting you want to think about how you want to predict it. Specifically how can we use the data Kaggle has given us to predict each matchup, and more broadly what are the indicators for any given team winning a game in the March Madness? The data isn't included in the Kaggle project but indicators such as:
+<ul>
+ <li>Coaches Experience</li>
+ <li>Average Team Experience</li>
+ <li>Wins on the Road (We can create this!)</li>
+ <li>Shooting Percentage</li>
+</ul>
+The possibilities are only limited to your imagination, especially given today's technology in sensors and movement tracking! Its worth spending time brainstorm what indicators you think are important! Bring in your basketball fanatic friends to give tips.
+
+
+
