@@ -91,11 +91,13 @@ team_metrics_by_season <- function(seasonletter) {
   for(i in playoff_teams) {
     home <- season[which(season$wteam == i), ]
     away <- season[which(season$lteam == i), ]
-    num <- nrow(home[which(home$wloc == "A"), ])
-    num_two <- nrow(away[which(away$wloc == "H"), ])
-    away_gamesplayed <- c(away_gamesplayed, num + num_two)
+    num <- nrow(home[which(home$wloc == "A"), ]) #Away wins
+    num_two <- nrow(away[which(away$wloc == "H"), ]) #Away losses
+    neut <- nrow(home[which(home$wloc == "N"), ])
+    neut_two <- nrow(away[which(away$wloc == " N"), ])
+    away_gamesplayed <- c(away_gamesplayed, num + num_two + neut + neut_two)
   }
-  away_wins <- season[which(season$wloc == "A"), ]
+  away_wins <- season[which(season$wloc == "A"|season$wloc == "N"), ]
   awayWins_table <- as.data.frame(table(away_wins$wteam))
   awayWins_by_team <- awayWins_table[awayWins_table$Var1 %in% playoff_teams, ]
   awayWins_by_team <- missingPteam(awayWins_by_team, playoff_teams) #Missing Teams Check
