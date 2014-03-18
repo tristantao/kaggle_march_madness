@@ -59,15 +59,15 @@ submissionFile <- function(season) {
 # seasonletter = String season Ex) "A"
 
 ###Variables included
-#  TWPCT = Total Winning Percentage
+#  TWPCT = Total Winning Percentage # For Blog
 #  AWPCT = Away Wins Winning Percentage
-#  WLT2 = Wins by margin less than 2
-#  LLT2 = Losses by margin less than 2
+#  WLT2 = Wins by margin less than 2 # For Blog
+#  LLT2 = Losses by margin less than 2 # For Blog
 #  WGT7 = Wins by margin greater than 7
 #  LGT7 = Losses by margin greater than 7
 #  PCT4WEEK = Win % in last 4 weeks
 #  RANKPCT = Win % against teams in playoff
-#  WST6 = Number of wins in last 6 games
+#  WST6 = Number of wins in last 6 games # For Blog
 #  SEED = Seed in tournament
 #  TWIN = Wins in tournament
 team_metrics_by_season <- function(seasonletter) {
@@ -205,7 +205,7 @@ team_metrics_by_season <- function(seasonletter) {
 # teamMetrics = team metrics by season aka the dataframe returned by team_metrics_by_season("A")
 library('stringr')
 data_frame_model <- function(seasonletter) {
-  teamMetrics <- team_metrics_by_season(seasonletter)  ##CHANGE TO REG OR _VTWO
+  teamMetrics <- team_metrics_by_season(seasonletter)
   season_matches <- tourneyRes[which(tourneyRes$season == seasonletter), ]
   team <- vector()
   result <- vector()
