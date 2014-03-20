@@ -3,12 +3,12 @@ source('utility.R')
 library('e1071')
 
 upsets <- read.csv("data/upsets.csv", header = T)
-regSeason <- read.csv("data/regular_season_results.csv", header = TRUE, stringsAsFactors = FALSE)
+regSeason <- read.csv("data/regular_season_results_comp.csv", header = TRUE, stringsAsFactors = FALSE)
 regSeason$ptdiff <- regSeason$wscore - regSeason$lscore
 seasons <- read.csv("data/seasons.csv", header = TRUE, stringsAsFactors = FALSE)
 teams <- read.csv("data/teams.csv", header = TRUE, stringsAsFactors = FALSE)
 tourneyRes <- read.csv("data/tourney_results.csv", header = TRUE, stringsAsFactors = FALSE)
-tourneySeeds <- read.csv("data/tourney_seeds.csv", header = TRUE, stringsAsFactors = FALSE)
+tourneySeeds <- read.csv("data/tourney_seeds_comp.csv", header = TRUE, stringsAsFactors = FALSE)
 tourneySlots <- read.csv("data/tourney_slots.csv", header = TRUE, stringsAsFactors = FALSE)
 library('stringr')
 library('randomForest')
@@ -27,7 +27,7 @@ a_season <- team_metrics_by_season("A")
 
 ## Creating master train data with all seasons
 train_data <- data.frame()
-for(i in LETTERS[1:13]) {
+for(i in LETTERS[1:18]) {
   train_data <- rbind(train_data, data_frame_model(i))
 }
 
@@ -39,8 +39,9 @@ O_season <- pred_frame_model("O")
 P_season <- pred_frame_model("P")
 Q_season <- pred_frame_model("Q")
 R_season <- pred_frame_model("R")
+S_season <- pred_frame_model("S")
 
-test_data <- rbind(N_season, O_season, P_season, Q_season, R_season)
+test_data <- S_season
 
 ## Fitting GLM
 train.glm <- glm(Win ~ AWPCT + RANKPCT + WST6
@@ -53,8 +54,8 @@ train.rpart <- rpart(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + SEED +
                      data = train_data, method = "class",
                      control=rpart.control(minsplit=30, cp=0.001))
 ## Random Forest
-train.rf <- randomForest(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + SEED + UPSET +
-                           AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A + SEED_A + UPSET_A,
+train.rf <- randomForest(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + UPSET + SEED +
+                           AWPCT_A + PCT4WEEK_A + RANKPCT_A + WST6_A + UPSET_A + SEED_A,
                          data = train_data, importance = TRUE, ntree =1501)
 ## K-NN
 train.knn <- knn(train_data, test_data, as.factor(train_data$Win), prob =T)
@@ -81,8 +82,8 @@ p.hats.svm <- attr(p.hats.svm,"prob")[ , 1]
 
 
 wins <- vector()
-for(i in 1:length(train.pred)) {
-  if(train.pred[i] > .5) {
+for(i in 1:length(p.hats.rf)) {
+  if(p.hats.rf[i] >= .5) {
     wins[i] <- 1
   } else {
     wins[i] <- 0
@@ -91,12 +92,17 @@ for(i in 1:length(train.pred)) {
 
 # 1112 1049 541 322 83
 
+file_check <- read.csv("data/solution.csv", header = T, stringsAsFactors = F)
+file_check <- cbind(file_check, wins)
+write.csv(file_check, file = "checknoseed.csv", row.names = FALSE)
+
+
 ##Ensemble model predictions
 ensemble.p.hats <- (p.hats.rf +p.hats.rpart) / 2
 
 subfile <- data.frame("id" = test_data$Matchup, "pred"= p.hats.rf)
 
-write.csv(subfile, file = "sub16.csv", row.names = FALSE)
+write.csv(subfile, file = "compsub2.csv", row.names = FALSE)
 
 #Sub2.csv
 train.glm <- glm(Win ~ AWPCT + PCT4WEEK + RANKPCT + WST6 + SEED + TWIN +
